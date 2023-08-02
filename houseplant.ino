@@ -30,19 +30,17 @@ Adapted from https://littlebirdelectronics.com.au/guides/4/automatic-plant-water
 
 /*--configure pins--*/
 
-const int buttonPin = int; //manually initialize a watering session
-const int logPercentPin = int; //track percentages
-const int moistureMin = int; //this plant's minimum moisture - change based on plant type, to become input from Apple Home
-const int moistureMax = int; //this plants maximum moisture - to become input from Apple Home
-const int moisturePin = A0; //analog input moisture sensor
-const int pumpPin = int; //turn on pump
-const int watertime = int; //watering time in seconds - to become an input from Apple Home
-const int waittime = int; //wait time between watering in minutes 
+const int buttonPin = A1; //analog in A1: button to manually initialize a watering session
+const int moistureMin = 20; //percent: this plant's minimum moisture - change based on plant type, to become input from Apple Home
+const int moistureMax = 90; //percent: this plants maximum moisture - to become input from Apple Home
+const int moisturePin = A0; //analog in A0: moisture sensor
+const int pumpPin = 2; //turn on pump
+const int waterTime = 10; //watering time in seconds - to become an input from Apple Home
+const int waitTime = 5; //wait time between watering in minutes 
 
 bool watering = false; //initialize 'watering' tracking variable to not watering.
-unsigned long startedWatering = 0; //To track the starting time of watering.
-unsigned long wateringTime = 0; //To accumulate the total watering time.
-
+unsigned long currentTime = 0; //initialize with Apple Home current time
+unsigned long startedWatering = 0; //track how long we watered.
 
 void setup() {
     pinMode(pumpPin, OUTPUT); //initialize pumpPin as output
@@ -64,7 +62,7 @@ void loop() {
     else {
         //if moisturePercent was higher than moistureMin, stop watering and delay another watering event.
         digitalWrite(motorPin, LOW);  //turn off the motor
-        delay(waittime * 60000);      //multiply by 60000 to translate minutes to milliseconds
+        delay(waitTime * 60000);      //multiply by 60000 to translate minutes to milliseconds
     }
     relayVal = digitalRead(relayPin);
     Serial.write(relayVal);
@@ -78,16 +76,11 @@ logMoisture () {
 }
 
 void startWatering (moisturePercent) {
-    if (startedWatering == 0) && canContinueWatering(moisturePercent) {
+    if (canContinueWatering(moisturePercent)) {
         startedWatering = millis();
-        digitalWrite(motorPin, HIGH);
         watering = true;
-    } else if canContinueWatering(moisturePercent) {
-        wateringTime += startedWatering;
         digitalWrite(motorPin, HIGH);
-        watering = true;
-    } else {
-        stopWatering();
+        delay(watertime * 1000); 
     }
 }
 
