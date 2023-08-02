@@ -30,15 +30,16 @@ Adapted from https://littlebirdelectronics.com.au/guides/4/automatic-plant-water
 
 /*--configure pins--*/
 
-const int buttonPin = A1; //analog in A1: button to manually initialize a watering session
-const int moistureMin = 20; //percent: this plant's minimum moisture - change based on plant type, to become input from Apple Home
-const int moistureMax = 90; //percent: this plants maximum moisture - to become input from Apple Home
-const int moisturePin = A0; //analog in A0: moisture sensor
-const int pumpPin = 2; //turn on pump
-const int waterTime = 10; //watering time in seconds - to become an input from Apple Home
-const int waitTime = 5; //wait time between watering in minutes 
+extern const int buttonPin; //externally assigned analog pin: button to manually initialize a watering session
+extern const int moistureMin; //percent: this plant's minimum moisture - change based on plant type, to become input from Apple Home
+extern const int moistureMax; //percent: this plants maximum moisture - to become input from Apple Home
+extern const int moisturePin; //analog in A0: moisture sensor
+extern const int pumpPin; //turn on pump
+extern const int waterTime; //watering time in seconds - to become an input from Apple Home
+extern const int waitTime; //wait time between watering in minutes 
 
 bool watering = false; //initialize 'watering' tracking variable to not watering.
+int moisturePercent = 0; //initialize moisturePercentage to nothing
 unsigned long currentTime = 0; //initialize with Apple Home current time
 unsigned long startedWatering = 0; //track how long we watered.
 
@@ -48,12 +49,9 @@ void setup() {
     stopWatering(); //initialize with pump off to avoid overwatering 
 }
 
-//connect to Apple Home or Raspberry Pi
-
 void loop() {
     int rawMoisture = analogRead(moisturePin);
-    int moisturePercent = ( 100 - ( rawMoisture / 1023.00) * 100 ); //convert analog value to percentage
-    logMoisture(); //track moisture levels
+    moisturePercent = ( 100 - ( rawMoisture / 1023.00) * 100 ); //convert analog value to percentage
 
     if (moisturePercent < moistureMin) {
         startWatering(moisturePercent); //call startedWatering which will ensure safety conditions for watering are met before watering
@@ -66,13 +64,6 @@ void loop() {
     }
     relayVal = digitalRead(relayPin);
     Serial.write(relayVal);
-
-}
-
-logMoisture () {
-    //set up with apple home
-    logPercent = Serial.print(moisturePercent);
-    digitalWrite(logPercent, HIGH);
 }
 
 void startWatering (moisturePercent) {
@@ -80,7 +71,7 @@ void startWatering (moisturePercent) {
         startedWatering = millis();
         watering = true;
         digitalWrite(motorPin, HIGH);
-        delay(watertime * 1000); 
+        delay(waterTime * 1000); 
     }
 }
 
@@ -89,7 +80,7 @@ void stopWatering () {
   digitalWrite(motorPin, LOW);
 }
 
-void canContinueWatering () {
+bool canContinueWatering () {
      // Ensure watering time hasn't elapsed. 
      // Stop watering after the configured duration
     if (watering && (millis() - startedWatering) >= waterTime*1000) || (moisturePercent > moistureMax) {
